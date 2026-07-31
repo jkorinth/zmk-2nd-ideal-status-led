@@ -1,0 +1,15 @@
+menuconfig ZMK_2NDIDEAL_STATUS_LED
+	bool "Custom status LED (takes over RGB underglow)"
+	select LED_STRIP
+	default n
+
+if ZMK_2NDIDEAL_STATUS_LED
+
+config ZMK_RGB_UNDERGLOW
+	default n
+
+config ZMK_2NDIDEAL_STATUS_LED_UPDATE_INTERVAL_MS
+	int "Update loop interval (ms)"
+	default 50
+
+endif # ZMK_2NDIDEAL_STATUS_LED

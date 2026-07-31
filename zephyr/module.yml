@@ -1,0 +1,5 @@
+name: zmk-2nd-ideal-status-led
+build:
+  cmake: .
+  kconfig: Kconfig
+
