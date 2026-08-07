@@ -73,8 +73,11 @@ ZMK_SUBSCRIPTION(status_led, zmk_layer_state_changed);
 
 static void status_led_peripheral_connected(struct bt_conn *conn, uint8_t err)
 {
-	pixels[0] = colors[COLOR_OK];
+	pixels[0] = colors[err ? COLOR_ERR : COLOR_OK];
 	led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+	if (err) {
+		LOG_WRN("connection to central has errors: 0x%02x", err);
+	}
 }
 
 static void status_led_peripheral_disconnected(struct bt_conn *conn, uint8_t reason)
