@@ -1,4 +1,5 @@
 if(CONFIG_ZMK_2NDIDEAL_STATUS_LED)
 	zephyr_library()
 	zephyr_library_sources(src/status_led.c)
+	zephyr_library_include_directories(${APPLICATION_SOURCE_DIR}/include)
 endif()

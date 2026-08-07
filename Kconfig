@@ -8,8 +8,8 @@ if ZMK_2NDIDEAL_STATUS_LED
 config ZMK_RGB_UNDERGLOW
 	default n
 
-config ZMK_2NDIDEAL_STATUS_LED_UPDATE_INTERVAL_MS
-	int "Update loop interval (ms)"
-	default 50
+config ZMK_2NDIDEAL_STATUS_LED_BRIGHTNESS
+	int "Single channel brightness (0-255)"
+	default 32
 
 endif # ZMK_2NDIDEAL_STATUS_LED
