@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package si_sl;
+
+enum Commands {
+  CMD_NOP = 0;
+  CMD_TURN_ON = 1;
+  CMD_TURN_OFF = 2;
+};
+
+message Color {
+  int32 r = 1;
+  int32 g = 2;
+  int32 b = 3;
+};
+
+message SetColor {
+  uint32 strip_index = 1;
+  Color color = 2;
+};
+
+message SetColors {
+  repeated SetColor colors = 1;
+};
+
+message SetAllColors {
+  repeated Color colors = 1;
+};
+
+message Command {
+  repeated Commands cmds = 1;
+};
+
+message Msg {
+  oneof msg {
+    Command cmd = 1;
+    SetColor set_color = 2;
+    SetColors set_colors = 3;
+    SetAllColors set_all_colors = 4;
+  }
+};

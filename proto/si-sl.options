@@ -1,0 +1,3 @@
+si_sl.Command.cmds 			max_count:8
+si_sl.SetColors.colors 			max_count:8
+si_sl.SetAllColors.colors 		max_count:16
