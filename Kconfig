@@ -12,6 +12,15 @@ config ZMK_2NDIDEAL_STATUS_LED_BRIGHTNESS
 	int "Single channel brightness (0-255)"
 	default 32
 
+config ZMK_2NDIDEAL_STATUS_LED_TEST
+	bool "Run WS2812B pixel test walk on boot"
+	default n
+
+config ZMK_2NDIDEAL_STATUS_LED_TEST_DELAY_MS
+	int "Delay between test-walk steps (ms)"
+	default 150
+	depends on ZMK_2NDIDEAL_STATUS_LED_TEST
+
 endif # ZMK_2NDIDEAL_STATUS_LED
 
 config ZMK_BEHAVIOR_STATUS_LED

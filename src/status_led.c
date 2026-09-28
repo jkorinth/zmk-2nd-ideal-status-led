@@ -37,6 +37,29 @@ static struct led_rgb colors[COLOR_COUNT] = {
     {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = STRIP_BRIGHTNESS},
 };
 
+#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
+static void status_led_test_walk(void) {
+  static const struct led_rgb test_colors[3] = {
+      {.r = STRIP_BRIGHTNESS, .g = 0, .b = 0},
+      {.r = 0, .g = STRIP_BRIGHTNESS, .b = 0},
+      {.r = 0, .g = 0, .b = STRIP_BRIGHTNESS},
+  };
+  LOG_INF("status LED test walk: starting, %u pixels", STRIP_NUM_PIXELS);
+  for (size_t i = 0; i < STRIP_NUM_PIXELS; i++) {
+    for (size_t c = 0; c < 3; c++) {
+      memset(pixels, 0, sizeof(pixels));
+      pixels[i] = test_colors[c];
+      int ret = led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+      LOG_INF("pixel %u color %u: led_strip_update_rgb() = %d", i, c, ret);
+      k_msleep(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_DELAY_MS);
+    }
+  }
+  memset(pixels, 0, sizeof(pixels));
+  led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+  LOG_INF("status LED test walk: done");
+}
+#endif // IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
+
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 static uint8_t current_layer;
 
@@ -58,6 +81,10 @@ static int status_led_init(void) {
     LOG_ERR("LED strip device is not ready");
     return -ENODEV;
   }
+
+#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
+  status_led_test_walk();
+#endif
 
   memset(pixels, 0, sizeof(pixels));
   for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
@@ -195,7 +222,16 @@ static int status_led_init(void) {
     return -ENODEV;
   }
 
+#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
+  status_led_test_walk();
+#endif
+
   status_led_turn_off();
+
+  for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
+    pixels[i] = colors[COLOR_BACKGROUND];
+  }
+  led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
   return 0;
 }
 
@@ -206,4 +242,4 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 
 #endif // IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_PERIPHERAL)
 
-SYS_INIT(status_led_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+SYS_INIT(status_led_init, POST_KERNEL, 85);
