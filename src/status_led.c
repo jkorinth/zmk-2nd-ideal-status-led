@@ -58,9 +58,36 @@ static void status_led_test_walk(void) {
   led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
   LOG_INF("status LED test walk: done");
 }
+static void status_led_fade_walk_thread(void *p1, void *p2, void *p3) {
+  ARG_UNUSED(p1);
+  ARG_UNUSED(p2);
+  ARG_UNUSED(p3);
+  for (;;) {
+    for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
+      for (int b = 0; b <= STRIP_BRIGHTNESS; b++) {
+        pixels[i] = (struct led_rgb){.r = b, .g = b, .b = b};
+        led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+        k_msleep(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_DELAY_MS);
+      }
+      for (int b = STRIP_BRIGHTNESS; b >= 0; b--) {
+        pixels[i] = (struct led_rgb){.r = b, .g = b, .b = b};
+        led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+        k_msleep(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_DELAY_MS);
+      }
+    }
+  }
+}
+
+// ponytail: temporary diagnostic, remove once LED wiring is confirmed healthy
+K_THREAD_DEFINE(status_led_fade_walk_tid, 512, status_led_fade_walk_thread, NULL,
+                 NULL, NULL, K_PRIO_PREEMPT(10), 0, 1000);
 #endif // IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+#include <pb.h>
+#include <pb_encode.h>
+#include <proto/si-sl.pb.h>
+
 static uint8_t current_layer;
 
 static int status_led_event_listener(const zmk_event_t *eh) {
@@ -72,6 +99,22 @@ static int status_led_event_listener(const zmk_event_t *eh) {
                            ? 0
                            : current_layer];
     led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+
+    si_sl_Msg m = si_sl_Msg_init_default;
+    m.which_msg = si_sl_Msg_set_color_tag;
+    m.msg.set_color.strip_index = 0;
+    m.msg.set_color.color.r = pixels[0].r;
+    m.msg.set_color.color.g = pixels[0].g;
+    m.msg.set_color.color.b = pixels[0].b;
+    m.msg.set_color.has_color = true;
+
+    static uint8_t buf[128];
+    pb_ostream_t stream = pb_ostream_from_buffer(buf, sizeof(buf));
+    if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
+      LOG_ERR("failed to encode color message: %s", PB_GET_ERROR(&stream));
+    } else {
+      tincan_speak(buf, stream.bytes_written);
+    }
   }
   return 0;
 }
