@@ -27,6 +27,14 @@ message SetAllColors {
   repeated Color colors = 1;
 };
 
+// Consecutive RGB triples starting at strip index start_index, packed as
+// raw bytes (no per-LED framing) so a full-strip color push fits in one
+// ATT write instead of ballooning past it with repeated-message overhead.
+message SetColorsBulk {
+  uint32 start_index = 1;
+  bytes rgb = 2;
+};
+
 message Command {
   repeated Commands cmds = 1;
 };
@@ -37,5 +45,6 @@ message Msg {
     SetColor set_color = 2;
     SetColors set_colors = 3;
     SetAllColors set_all_colors = 4;
+    SetColorsBulk set_colors_bulk = 5;
   }
 };

@@ -192,17 +192,30 @@ struct led_rgb bl_store_get_local_rgb(uint8_t chain_idx) {
 }
 
 void bl_store_push_peripheral_colors(void) {
-  // Deliberately 6 small SetColor sends rather than 1 batched SetColors
-  // message: the batched message (6 LEDs' worth of protobuf) is big enough
-  // to exceed a single ATT Write Request once the ~3-byte ATT header is
-  // subtracted from the negotiated MTU, which makes bt_gatt_write() fall
-  // back to a GATT long-write (prepare/execute) sequence — and the
-  // peripheral's custom write callback doesn't implement that, so it
-  // rejects it with ATT_ERR_REQUEST_NOT_SUPPORTED. Each individual
-  // SetColor is tiny and always fits in one write (this is the same path
-  // bl_store_adjust's live-preview already uses successfully).
+  // One SetColorsBulk write: a start index (1, past the status pixel) plus
+  // LEDS_PER_HALF*3 raw RGB bytes, no per-LED protobuf framing. Small
+  // enough to always fit in a single ATT write (unlike the old batched
+  // SetColors, which ballooned past the MTU on its per-entry overhead and
+  // needed a GATT long-write the peripheral doesn't support), and one round
+  // trip instead of six, so all 6 LEDs update together instead of visibly
+  // rippling in one at a time.
+  si_sl_Msg m = si_sl_Msg_init_default;
+  m.which_msg = si_sl_Msg_set_colors_bulk_tag;
+  m.msg.set_colors_bulk.start_index = 1;
+  m.msg.set_colors_bulk.rgb.size = LEDS_PER_HALF * 3;
   for (uint8_t i = 0; i < LEDS_PER_HALF; i++) {
-    send_color(i + 1, hsb_to_rgb(leds[LEDS_PER_HALF + i]));
+    struct led_rgb rgb = hsb_to_rgb(leds[LEDS_PER_HALF + i]);
+    m.msg.set_colors_bulk.rgb.bytes[i * 3 + 0] = rgb.r;
+    m.msg.set_colors_bulk.rgb.bytes[i * 3 + 1] = rgb.g;
+    m.msg.set_colors_bulk.rgb.bytes[i * 3 + 2] = rgb.b;
+  }
+
+  static uint8_t buf[128];
+  pb_ostream_t stream = pb_ostream_from_buffer(buf, sizeof(buf));
+  if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
+    LOG_ERR("failed to encode bulk colors message: %s", PB_GET_ERROR(&stream));
+  } else {
+    tincan_speak(buf, stream.bytes_written);
   }
 }
 

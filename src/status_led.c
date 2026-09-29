@@ -241,6 +241,22 @@ static void status_led_set_all_colors(const si_sl_SetAllColors *sac) {
   led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 }
 
+static void status_led_set_colors_bulk(const si_sl_SetColorsBulk *scb) {
+  size_t count = scb->rgb.size / 3;
+  for (size_t i = 0; i < count; i++) {
+    uint32_t idx = scb->start_index + i;
+    if (idx >= STRIP_NUM_PIXELS) {
+      LOG_ERR("received invalid led index %u", idx);
+      break;
+    }
+    pixels[idx].r = scb->rgb.bytes[i * 3 + 0];
+    pixels[idx].g = scb->rgb.bytes[i * 3 + 1];
+    pixels[idx].b = scb->rgb.bytes[i * 3 + 2];
+    LOG_DBG("set #%u to (%u, %u, %u)", idx, pixels[idx].r, pixels[idx].g, pixels[idx].b);
+  }
+  led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+}
+
 static void status_led_on_tincan(const void *payload, size_t length) {
   si_sl_Msg m = si_sl_Msg_init_default;
   pb_istream_t stream = pb_istream_from_buffer(payload, length);
@@ -259,6 +275,9 @@ static void status_led_on_tincan(const void *payload, size_t length) {
       break;
     case si_sl_Msg_set_all_colors_tag:
       status_led_set_all_colors(&m.msg.set_all_colors);
+      break;
+    case si_sl_Msg_set_colors_bulk_tag:
+      status_led_set_colors_bulk(&m.msg.set_colors_bulk);
       break;
     default:
       LOG_ERR("unknown msg subtype %d", m.which_msg);
