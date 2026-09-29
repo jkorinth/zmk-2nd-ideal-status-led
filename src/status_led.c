@@ -3,6 +3,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include <status_led_backlight.h>
 #include <tincan/tincan.h>
 #include <zmk/event_manager.h>
 
@@ -36,6 +37,13 @@ static struct led_rgb colors[COLOR_COUNT] = {
     {.r = 0, .g = 0, .b = STRIP_BRIGHTNESS},
     {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = STRIP_BRIGHTNESS},
 };
+
+void status_led_set_backlight(int on) {
+  for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
+    pixels[i] = on ? colors[COLOR_BACKGROUND] : (struct led_rgb){0};
+  }
+  led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+}
 
 #if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
 static void status_led_test_walk(void) {
@@ -130,9 +138,6 @@ static int status_led_init(void) {
 #endif
 
   memset(pixels, 0, sizeof(pixels));
-  for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
-    pixels[i] = colors[COLOR_BACKGROUND];
-  }
   led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 
   return 0;
@@ -146,17 +151,6 @@ ZMK_SUBSCRIPTION(status_led, zmk_layer_state_changed);
 #include <pb_decode.h>
 #include <proto/si-sl.pb.h>
 
-static void status_led_turn_on(void) {
-  memset(pixels, 0, sizeof(pixels));
-  pixels[0] = colors[COLOR_ERR];
-  led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-}
-
-static void status_led_turn_off(void) {
-  memset(pixels, 0, sizeof(pixels));
-  led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-}
-
 static void status_led_decode_cmds(const si_sl_Command *m) {
   for (size_t i = 0; i < m->cmds_count; i++) {
     switch (m->cmds[i]) {
@@ -165,11 +159,11 @@ static void status_led_decode_cmds(const si_sl_Command *m) {
       break;
     case si_sl_Commands_CMD_TURN_ON:
       LOG_DBG("received TURN_ON");
-      status_led_turn_on();
+      status_led_set_backlight(1);
       break;
     case si_sl_Commands_CMD_TURN_OFF:
       LOG_DBG("received TURN_OFF");
-      status_led_turn_off();
+      status_led_set_backlight(0);
       break;
     default:
       LOG_ERR("received invalid command: %d", m->cmds[i]);
@@ -269,11 +263,7 @@ static int status_led_init(void) {
   status_led_test_walk();
 #endif
 
-  status_led_turn_off();
-
-  for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
-    pixels[i] = colors[COLOR_BACKGROUND];
-  }
+  memset(pixels, 0, sizeof(pixels));
   led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
   return 0;
 }
