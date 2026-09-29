@@ -28,15 +28,17 @@ typedef enum {
   COLOR_OFF,
   COLOR_OK,
   COLOR_ERR,
-  COLOR_BACKGROUND,
+  COLOR_SELECT, // bl_select_layer indicator
+  COLOR_ADJUST, // bl_adjust_layer indicator
   COLOR_COUNT
 } status_led_color_t;
 
 static struct led_rgb colors[COLOR_COUNT] = {
-    {.r = 0, .g = 0, .b = 0},
-    {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = STRIP_BRIGHTNESS},
-    {.r = 0, .g = 0, .b = STRIP_BRIGHTNESS},
-    {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = STRIP_BRIGHTNESS},
+    {.r = 0, .g = 0, .b = 0},                                             // COLOR_OFF
+    {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = STRIP_BRIGHTNESS}, // COLOR_OK
+    {.r = 0, .g = 0, .b = STRIP_BRIGHTNESS},                              // COLOR_ERR
+    {.r = STRIP_BRIGHTNESS, .g = 0, .b = STRIP_BRIGHTNESS},               // COLOR_SELECT (magenta)
+    {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = 0},               // COLOR_ADJUST (yellow)
 };
 
 void status_led_set_backlight(int on) {
@@ -122,7 +124,7 @@ static int status_led_event_listener(const zmk_event_t *eh) {
   current_layer = zmk_keymap_highest_layer_active();
   LOG_DBG("prev layer: %d, curr layer: %d", prev_layer, current_layer);
   if (prev_layer != current_layer) {
-    pixels[0] = colors[current_layer > sizeof(colors) / sizeof(*colors)
+    pixels[0] = colors[current_layer >= sizeof(colors) / sizeof(*colors)
                            ? 0
                            : current_layer];
     led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
