@@ -2,6 +2,7 @@
 #include <zephyr/drivers/led_strip.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/util.h>
 
 #include <status_led_backlight.h>
 #include <tincan/tincan.h>
@@ -40,6 +41,12 @@ static struct led_rgb colors[COLOR_COUNT] = {
     {.r = STRIP_BRIGHTNESS, .g = 0, .b = STRIP_BRIGHTNESS},               // COLOR_SELECT (magenta)
     {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = 0},               // COLOR_ADJUST (yellow)
 };
+
+// pixels[0] is indexed directly by zmk_keymap_highest_layer_active(), so
+// colors[] must have one entry per keymap layer or that indexing reads past
+// the array. Catch a too-short colors[] at build time...
+BUILD_ASSERT(ARRAY_SIZE(colors) >= ZMK_KEYMAP_LAYERS_LEN,
+             "status_led colors[] has fewer entries than there are keymap layers");
 
 void status_led_set_backlight(int on) {
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
@@ -124,9 +131,11 @@ static int status_led_event_listener(const zmk_event_t *eh) {
   current_layer = zmk_keymap_highest_layer_active();
   LOG_DBG("prev layer: %d, curr layer: %d", prev_layer, current_layer);
   if (prev_layer != current_layer) {
-    pixels[0] = colors[current_layer >= sizeof(colors) / sizeof(*colors)
-                           ? 0
-                           : current_layer];
+    // BUILD_ASSERT above guards colors[] against being too short at compile
+    // time; this is the runtime fallback (e.g. layers added dynamically past
+    // what colors[] was sized for) — falls back to COLOR_OFF rather than
+    // reading past the array.
+    pixels[0] = colors[current_layer >= ARRAY_SIZE(colors) ? COLOR_OFF : current_layer];
     led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 
     si_sl_Msg m = si_sl_Msg_init_default;

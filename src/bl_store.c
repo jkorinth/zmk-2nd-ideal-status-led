@@ -32,10 +32,18 @@ struct bl_led_hsb {
   uint8_t b;
 };
 
+/* Default brightness, as a percentage, rounded to nearest so hsb_to_rgb()
+ * reproduces the old flat-fill behavior (white at STRIP_BRIGHTNESS) as
+ * closely as the 0-100 percentage representation allows (within ~1/255). */
+#define STRIP_BRIGHTNESS_PCT (((STRIP_BRIGHTNESS * 100) + 127) / 255)
+
 /* index 0..5 = this half's chain idx 1..6, index 6..11 = the other half's
- * chain idx 1..6. Persisted as a single blob under settings key "bl/leds". */
+ * chain idx 1..6. Persisted as a single blob under settings key "bl/leds".
+ * Default: white (s=0) at the same brightness the old flat backlight fill
+ * used, so upgrading firmware doesn't change the backlight's look until the
+ * user actually tunes an LED. */
 static struct bl_led_hsb leds[BL_LED_COUNT] = {
-    [0 ... BL_LED_COUNT - 1] = {.h = 0, .s = 0, .b = (STRIP_BRIGHTNESS * 100) / 255},
+    [0 ... BL_LED_COUNT - 1] = {.h = 0, .s = 0, .b = STRIP_BRIGHTNESS_PCT},
 };
 
 struct bl_editor_state {
