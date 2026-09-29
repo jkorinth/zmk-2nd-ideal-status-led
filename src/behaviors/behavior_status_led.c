@@ -11,6 +11,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 #ifdef CONFIG_ZMK_SPLIT_ROLE_CENTRAL
+#include <bl_store.h>
 #include <pb.h>
 #include <pb_encode.h>
 #include <proto/si-sl.pb.h>
@@ -38,6 +39,7 @@ on_status_led_binding_released(struct zmk_behavior_binding *binding,
   case SL_TURN_ON:
     LOG_DBG("received SL_TURN_ON");
     status_led_set_backlight(1);
+    bl_store_push_peripheral_colors();
     m.msg.cmd.cmds_count = 1;
     m.msg.cmd.cmds[0] = si_sl_Commands_CMD_TURN_ON;
     break;

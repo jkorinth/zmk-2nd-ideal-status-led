@@ -1,0 +1,5 @@
+# Copyright (c) 2026 Jens Korinth
+# SPDX-License-Identifier: GPLv2+
+description: Commit or discard the in-progress underglow LED edit
+compatible: "zmk,behavior-bl-commit"
+include: one_param.yaml

@@ -1,0 +1,5 @@
+# Copyright (c) 2026 Jens Korinth
+# SPDX-License-Identifier: GPLv2+
+description: Adjust one HSB component of the currently-selected underglow LED
+compatible: "zmk,behavior-bl-adjust"
+include: two_param.yaml

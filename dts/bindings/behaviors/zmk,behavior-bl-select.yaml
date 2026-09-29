@@ -1,0 +1,5 @@
+# Copyright (c) 2026 Jens Korinth
+# SPDX-License-Identifier: GPLv2+
+description: Select which underglow LED to edit on the 2nd Ideal shield
+compatible: "zmk,behavior-bl-select"
+include: one_param.yaml

@@ -8,6 +8,7 @@
 #include <zmk/event_manager.h>
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+#include <bl_store.h>
 #include <zmk/events/layer_state_changed.h>
 #else // !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 #include <zephyr/bluetooth/conn.h>
@@ -39,9 +40,27 @@ static struct led_rgb colors[COLOR_COUNT] = {
 };
 
 void status_led_set_backlight(int on) {
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
-    pixels[i] = on ? colors[COLOR_BACKGROUND] : (struct led_rgb){0};
+    pixels[i] = on ? bl_store_get_local_rgb(i) : (struct led_rgb){0};
   }
+#else
+  if (!on) {
+    for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
+      pixels[i] = (struct led_rgb){0};
+    }
+  }
+  // on: leave pixels[1..STRIP_NUM_PIXELS) as-is — the central pushes fresh
+  // per-pixel colors via a SetColors message right before every TURN_ON.
+#endif
+  led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+}
+
+void status_led_set_pixel(uint8_t chain_idx, struct led_rgb rgb) {
+  if (chain_idx >= STRIP_NUM_PIXELS) {
+    return;
+  }
+  pixels[chain_idx] = rgb;
   led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 }
 
