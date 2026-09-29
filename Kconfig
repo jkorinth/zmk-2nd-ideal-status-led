@@ -21,6 +21,16 @@ config ZMK_2NDIDEAL_STATUS_LED_TEST_DELAY_MS
 	default 150
 	depends on ZMK_2NDIDEAL_STATUS_LED_TEST
 
+config ZMK_2NDIDEAL_BL_RESET
+	bool "One-shot: reset stored per-LED backlight colors to defaults on next boot"
+	default n
+	help
+	  Enable this, build, and flash once to discard whatever is currently
+	  persisted under settings key "bl/leds" and rewrite it with the
+	  compiled-in defaults. Disable this and reflash again afterward —
+	  leaving it enabled resets the stored colors back to defaults on
+	  every boot.
+
 endif # ZMK_2NDIDEAL_STATUS_LED
 
 config ZMK_BEHAVIOR_STATUS_LED

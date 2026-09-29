@@ -137,7 +137,14 @@ void bl_store_select(struct bl_led_ref led) {
   editor.editing = true;
   editor.led = led;
   editor.scratch = leds[flat_idx(led)];
-  zmk_keymap_layer_to(BL_ADJUST_LAYER, false);
+  // locking=true: matches the stock &to behavior's own default (it sets its
+  // devicetree "locking;" property), which is what activated
+  // BL_SELECT_LAYER in the first place. Deactivating a locked layer requires
+  // locking=true too (see set_layer_state() in zmk/app/src/keymap.c) — call
+  // this with false and the old layer never actually deactivates, leaving
+  // both layers active and later re-entering it a no-op that raises no
+  // layer_state_changed event (so the status LED silently stops updating).
+  zmk_keymap_layer_to(BL_ADJUST_LAYER, true);
 }
 
 void bl_store_adjust(uint8_t component, int8_t step) {
@@ -168,7 +175,7 @@ void bl_store_commit(void) {
   leds[flat_idx(editor.led)] = editor.scratch;
   settings_save_one("bl/leds", &leds, sizeof(leds));
   editor.editing = false;
-  zmk_keymap_layer_to(BL_SELECT_LAYER, false);
+  zmk_keymap_layer_to(BL_SELECT_LAYER, true); // see locking note in bl_store_select()
 }
 
 void bl_store_discard(void) {
@@ -177,7 +184,7 @@ void bl_store_discard(void) {
   }
   render(editor.led, leds[flat_idx(editor.led)]);
   editor.editing = false;
-  zmk_keymap_layer_to(BL_SELECT_LAYER, false);
+  zmk_keymap_layer_to(BL_SELECT_LAYER, true); // see locking note in bl_store_select()
 }
 
 struct led_rgb bl_store_get_local_rgb(uint8_t chain_idx) {
@@ -212,6 +219,13 @@ static int bl_store_settings_set(const char *name, size_t len, settings_read_cb 
   const char *next;
 
   if (settings_name_steq(name, "leds", &next) && !next) {
+    if (IS_ENABLED(CONFIG_ZMK_2NDIDEAL_BL_RESET)) {
+      LOG_WRN("CONFIG_ZMK_2NDIDEAL_BL_RESET is set: ignoring stored backlight "
+              "colors, rewriting defaults. Disable this option and reflash "
+              "once you've confirmed the reset.");
+      settings_save_one("bl/leds", &leds, sizeof(leds));
+      return 0;
+    }
     if (len != sizeof(leds)) {
       return -EINVAL;
     }
