@@ -48,8 +48,16 @@ struct led_rgb bl_store_get_local_rgb(uint8_t chain_idx);
 
 /*
  * Pushes this half's stored view of the peripheral's 6 underglow colors to
- * it via a single tincan SetColors message. Called right before every
+ * it via a single tincan SetColorsBulk message. Called right before every
  * CMD_TURN_ON so the peripheral always has fresh colors, including after its
  * own reboot/reconnect.
  */
 void bl_store_push_peripheral_colors(void);
+
+/*
+ * Records whether the backlight is on, persisted alongside the LED colors
+ * so it's restored automatically on the next boot. No-op (no save) if the
+ * state isn't actually changing. Called from behavior_status_led.c on
+ * SL_TURN_ON/SL_TURN_OFF.
+ */
+void bl_store_set_backlight_on(bool on);

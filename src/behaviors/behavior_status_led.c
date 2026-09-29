@@ -39,6 +39,7 @@ on_status_led_binding_released(struct zmk_behavior_binding *binding,
   case SL_TURN_ON:
     LOG_DBG("received SL_TURN_ON");
     status_led_set_backlight(1);
+    bl_store_set_backlight_on(true);
     // On the peripheral, status_led_set_backlight(1) deliberately leaves
     // pixels[1..6] untouched — it relies on a SetColors push to have
     // already populated them, since the peripheral has no durable color
@@ -52,6 +53,7 @@ on_status_led_binding_released(struct zmk_behavior_binding *binding,
   case SL_TURN_OFF:
     LOG_DBG("received SL_TURN_OFF");
     status_led_set_backlight(0);
+    bl_store_set_backlight_on(false);
     m.msg.cmd.cmds_count = 1;
     m.msg.cmd.cmds[0] = si_sl_Commands_CMD_TURN_OFF;
     break;

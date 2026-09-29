@@ -1,3 +1,4 @@
+#include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
@@ -38,13 +39,33 @@ struct bl_led_hsb {
 #define STRIP_BRIGHTNESS_PCT (((STRIP_BRIGHTNESS * 100) + 127) / 255)
 
 /* index 0..5 = this half's chain idx 1..6, index 6..11 = the other half's
- * chain idx 1..6. Persisted as a single blob under settings key "bl/leds".
- * Default: white (s=0) at the same brightness the old flat backlight fill
- * used, so upgrading firmware doesn't change the backlight's look until the
- * user actually tunes an LED. */
+ * chain idx 1..6. Default: white (s=0) at the same brightness the old flat
+ * backlight fill used, so upgrading firmware doesn't change the backlight's
+ * look until the user actually tunes an LED. */
 static struct bl_led_hsb leds[BL_LED_COUNT] = {
     [0 ... BL_LED_COUNT - 1] = {.h = 0, .s = 0, .b = STRIP_BRIGHTNESS_PCT},
 };
+
+/* Was the backlight last left on? Persisted alongside leds[] (same blob,
+ * same settings key "bl/leds") rather than as a separate key, so the two
+ * always load together atomically — settings_load() doesn't guarantee any
+ * ordering between two different keys, and applying "restore backlight on"
+ * before leds[] itself has loaded would render stale/default colors. */
+static bool backlight_on;
+
+/* Packs leds[] + backlight_on for a single settings_save_one() /
+ * settings_read_cb() call under key "bl/leds". */
+struct bl_store_blob {
+  struct bl_led_hsb leds[BL_LED_COUNT];
+  bool on;
+};
+
+static void bl_store_save(void) {
+  struct bl_store_blob blob;
+  memcpy(blob.leds, leds, sizeof(leds));
+  blob.on = backlight_on;
+  settings_save_one("bl/leds", &blob, sizeof(blob));
+}
 
 struct bl_editor_state {
   bool editing;
@@ -173,7 +194,7 @@ void bl_store_commit(void) {
     return;
   }
   leds[flat_idx(editor.led)] = editor.scratch;
-  settings_save_one("bl/leds", &leds, sizeof(leds));
+  bl_store_save();
   editor.editing = false;
   zmk_keymap_layer_to(BL_SELECT_LAYER, true); // see locking note in bl_store_select()
 }
@@ -189,6 +210,14 @@ void bl_store_discard(void) {
 
 struct led_rgb bl_store_get_local_rgb(uint8_t chain_idx) {
   return hsb_to_rgb(leds[chain_idx - 1]);
+}
+
+void bl_store_set_backlight_on(bool on) {
+  if (backlight_on == on) {
+    return;
+  }
+  backlight_on = on;
+  bl_store_save();
 }
 
 void bl_store_push_peripheral_colors(void) {
@@ -227,15 +256,31 @@ static int bl_store_settings_set(const char *name, size_t len, settings_read_cb 
   if (settings_name_steq(name, "leds", &next) && !next) {
     if (IS_ENABLED(CONFIG_ZMK_2NDIDEAL_BL_RESET)) {
       LOG_WRN("CONFIG_ZMK_2NDIDEAL_BL_RESET is set: ignoring stored backlight "
-              "colors, rewriting defaults. Disable this option and reflash "
-              "once you've confirmed the reset.");
-      settings_save_one("bl/leds", &leds, sizeof(leds));
+              "colors/state, rewriting defaults. Disable this option and "
+              "reflash once you've confirmed the reset.");
+      backlight_on = false;
+      bl_store_save();
       return 0;
     }
-    if (len != sizeof(leds)) {
+    struct bl_store_blob blob;
+    if (len != sizeof(blob)) {
       return -EINVAL;
     }
-    return read_cb(cb_arg, &leds, sizeof(leds)) >= 0 ? 0 : -EINVAL;
+    if (read_cb(cb_arg, &blob, sizeof(blob)) < 0) {
+      return -EINVAL;
+    }
+    memcpy(leds, blob.leds, sizeof(leds));
+    backlight_on = blob.on;
+    if (backlight_on) {
+      // Restore the backlight to how it was left: render this half's LEDs
+      // locally now (the strip device is already ready — this settings
+      // callback runs from settings_load() in main(), which happens after
+      // all SYS_INIT hooks including status_led_init()); the peripheral
+      // push safely queues in tincan even if BLE hasn't connected yet.
+      status_led_set_backlight(1);
+      bl_store_push_peripheral_colors();
+    }
+    return 0;
   }
 
   return -ENOENT;
