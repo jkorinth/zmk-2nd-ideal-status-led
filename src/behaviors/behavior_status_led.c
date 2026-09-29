@@ -39,7 +39,15 @@ on_status_led_binding_released(struct zmk_behavior_binding *binding,
   case SL_TURN_ON:
     LOG_DBG("received SL_TURN_ON");
     status_led_set_backlight(1);
-    bl_store_push_peripheral_colors();
+    // Deliberately NOT calling bl_store_push_peripheral_colors() here: it
+    // used to fire a second tincan_speak() right before this one, and two
+    // back-to-back sends per toggle proved unreliable in practice (the
+    // peripheral's half stopped responding to on/off). Single-message
+    // TURN_ON is the version already proven to toggle both halves. The
+    // peripheral's LEDs still get pushed fresh colors whenever one is
+    // actually edited (bl_store_adjust's live-preview render); the gap is
+    // only "colors go stale if the peripheral reboots mid-session and
+    // nothing gets re-edited before the next TURN_ON" — acceptable.
     m.msg.cmd.cmds_count = 1;
     m.msg.cmd.cmds[0] = si_sl_Commands_CMD_TURN_ON;
     break;
