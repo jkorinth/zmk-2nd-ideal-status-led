@@ -123,14 +123,24 @@ static struct led_rgb wheel(uint8_t pos) {
   };
 }
 
+/* chain_idx (1-6) doesn't run left-to-right — see bl_ids.h: 1/5/3 = top
+ * row left/mid/right, 2/6/4 = bottom row left/mid/right. Walking raw chain
+ * order jumps left-col -> right-col -> mid-col, so adjacent chain indices
+ * aren't physical neighbors and the hue never blends. This is the actual
+ * nearest-neighbor zigzag path confirmed against the PCB footprint
+ * coordinates: left-top, left-bottom, mid-bottom, mid-top, right-top,
+ * right-bottom. */
+static const uint8_t zigzag_chain_order[] = {1, 2, 6, 5, 3, 4};
+
 static void status_led_rainbow_thread(void *p1, void *p2, void *p3) {
   ARG_UNUSED(p1);
   ARG_UNUSED(p2);
   ARG_UNUSED(p3);
   uint8_t base = 0;
   for (;;) {
-    for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
-      pixels[i] = wheel(base + (i * 256 / (STRIP_NUM_PIXELS - 1)));
+    for (size_t pos = 0; pos < ARRAY_SIZE(zigzag_chain_order); pos++) {
+      pixels[zigzag_chain_order[pos]] =
+          wheel(base + (pos * 256 / (ARRAY_SIZE(zigzag_chain_order) - 1)));
     }
     led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
     base++;
