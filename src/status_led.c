@@ -179,6 +179,23 @@ K_THREAD_DEFINE(status_led_fade_walk_tid, 512, status_led_fade_walk_thread, NULL
 #endif // IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_RAINBOW)
 #endif // IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
 
+#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_NO_BLE)
+// ponytail: temporary diagnostic, remove once BLE-vs-flicker correlation is
+// confirmed or ruled out. Breaks split/host connectivity on purpose.
+//
+// Must run at APPLICATION level, after ZMK_BLE_INIT_PRIORITY: zmk_ble_init()
+// (zmk/app/src/ble.c) calls bt_enable() at APPLICATION/CONFIG_ZMK_BLE_INIT_PRIORITY
+// (default 50). status_led_init() itself runs at POST_KERNEL, which is
+// strictly earlier than APPLICATION — calling bt_disable() there hangs boot
+// because Bluetooth was never enabled yet.
+static int status_led_disable_ble(void) {
+  int err = bt_disable();
+  LOG_WRN("TEST_NO_BLE: bt_disable() = %d", err);
+  return 0;
+}
+SYS_INIT(status_led_disable_ble, APPLICATION, 90);
+#endif // IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_NO_BLE)
+
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 #include <pb.h>
 #include <pb_encode.h>
@@ -222,13 +239,6 @@ static int status_led_init(void) {
     LOG_ERR("LED strip device is not ready");
     return -ENODEV;
   }
-
-#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_NO_BLE)
-  // ponytail: temporary diagnostic, remove once BLE-vs-flicker correlation
-  // is confirmed or ruled out. Breaks split/host connectivity on purpose.
-  int bt_err = bt_disable();
-  LOG_WRN("TEST_NO_BLE: bt_disable() = %d", bt_err);
-#endif
 
 #if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
   status_led_test_walk();
@@ -374,13 +384,6 @@ static int status_led_init(void) {
     LOG_ERR("LED strip device is not ready");
     return -ENODEV;
   }
-
-#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_NO_BLE)
-  // ponytail: temporary diagnostic, remove once BLE-vs-flicker correlation
-  // is confirmed or ruled out. Breaks split/host connectivity on purpose.
-  int bt_err = bt_disable();
-  LOG_WRN("TEST_NO_BLE: bt_disable() = %d", bt_err);
-#endif
 
 #if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
   status_led_test_walk();
