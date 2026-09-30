@@ -94,6 +94,54 @@ static void status_led_test_walk(void) {
   led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
   LOG_INF("status LED test walk: done");
 }
+#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_RAINBOW)
+/* Standard NeoPixel-style 0-255 color wheel: smooth and continuous across
+ * the 255->0 wraparound, which is what gives the hue shift its "moving in
+ * circles" look. */
+static struct led_rgb wheel(uint8_t pos) {
+  pos = 255 - pos;
+  uint8_t r, g, b;
+  if (pos < 85) {
+    r = 255 - pos * 3;
+    g = 0;
+    b = pos * 3;
+  } else if (pos < 170) {
+    pos -= 85;
+    r = 0;
+    g = pos * 3;
+    b = 255 - pos * 3;
+  } else {
+    pos -= 170;
+    r = pos * 3;
+    g = 255 - pos * 3;
+    b = 0;
+  }
+  return (struct led_rgb){
+      .r = (r * STRIP_BRIGHTNESS) / 255,
+      .g = (g * STRIP_BRIGHTNESS) / 255,
+      .b = (b * STRIP_BRIGHTNESS) / 255,
+  };
+}
+
+static void status_led_rainbow_thread(void *p1, void *p2, void *p3) {
+  ARG_UNUSED(p1);
+  ARG_UNUSED(p2);
+  ARG_UNUSED(p3);
+  uint8_t base = 0;
+  for (;;) {
+    for (size_t i = 1; i < STRIP_NUM_PIXELS; i++) {
+      pixels[i] = wheel(base + (i * 256 / (STRIP_NUM_PIXELS - 1)));
+    }
+    led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+    base++;
+    k_msleep(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_DELAY_MS);
+  }
+}
+
+// ponytail: temporary diagnostic, remove once LED wiring is confirmed healthy
+K_THREAD_DEFINE(status_led_rainbow_tid, 512, status_led_rainbow_thread, NULL,
+                 NULL, NULL, K_PRIO_PREEMPT(10), 0, 1000);
+#else // !IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_RAINBOW)
 static void status_led_fade_walk_thread(void *p1, void *p2, void *p3) {
   ARG_UNUSED(p1);
   ARG_UNUSED(p2);
@@ -117,6 +165,7 @@ static void status_led_fade_walk_thread(void *p1, void *p2, void *p3) {
 // ponytail: temporary diagnostic, remove once LED wiring is confirmed healthy
 K_THREAD_DEFINE(status_led_fade_walk_tid, 512, status_led_fade_walk_thread, NULL,
                  NULL, NULL, K_PRIO_PREEMPT(10), 0, 1000);
+#endif // IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_RAINBOW)
 #endif // IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)

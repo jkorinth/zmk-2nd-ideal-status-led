@@ -21,6 +21,11 @@ config ZMK_2NDIDEAL_STATUS_LED_TEST_DELAY_MS
 	default 150
 	depends on ZMK_2NDIDEAL_STATUS_LED_TEST
 
+config ZMK_2NDIDEAL_STATUS_LED_TEST_RAINBOW
+	bool "Run rainbow hue-shift on boot instead of the fade walk"
+	default n
+	depends on ZMK_2NDIDEAL_STATUS_LED_TEST
+
 config ZMK_2NDIDEAL_BL_RESET
 	bool "One-shot: reset stored per-LED backlight colors to defaults on next boot"
 	default n
