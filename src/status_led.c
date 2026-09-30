@@ -1,3 +1,4 @@
+#include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/led_strip.h>
 #include <zephyr/kernel.h>
@@ -222,6 +223,13 @@ static int status_led_init(void) {
     return -ENODEV;
   }
 
+#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_NO_BLE)
+  // ponytail: temporary diagnostic, remove once BLE-vs-flicker correlation
+  // is confirmed or ruled out. Breaks split/host connectivity on purpose.
+  int bt_err = bt_disable();
+  LOG_WRN("TEST_NO_BLE: bt_disable() = %d", bt_err);
+#endif
+
 #if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
   status_led_test_walk();
 #endif
@@ -366,6 +374,13 @@ static int status_led_init(void) {
     LOG_ERR("LED strip device is not ready");
     return -ENODEV;
   }
+
+#if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST_NO_BLE)
+  // ponytail: temporary diagnostic, remove once BLE-vs-flicker correlation
+  // is confirmed or ruled out. Breaks split/host connectivity on purpose.
+  int bt_err = bt_disable();
+  LOG_WRN("TEST_NO_BLE: bt_disable() = %d", bt_err);
+#endif
 
 #if IS_ENABLED(CONFIG_ZMK_2NDIDEAL_STATUS_LED_TEST)
   status_led_test_walk();

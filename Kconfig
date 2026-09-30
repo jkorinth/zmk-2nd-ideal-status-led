@@ -26,6 +26,16 @@ config ZMK_2NDIDEAL_STATUS_LED_TEST_RAINBOW
 	default n
 	depends on ZMK_2NDIDEAL_STATUS_LED_TEST
 
+config ZMK_2NDIDEAL_STATUS_LED_TEST_NO_BLE
+	bool "Diagnostic: bt_disable() on boot to silence the radio during LED tests"
+	default n
+	depends on ZMK_2NDIDEAL_STATUS_LED_TEST
+	help
+	  Kills the BLE radio (no advertising, no connections, no split link)
+	  right after boot so an LED test thread runs with zero radio
+	  activity. Breaks split/host connectivity — only useful for A/B
+	  testing whether WS2812 glitches correlate with BLE activity.
+
 config ZMK_2NDIDEAL_BL_RESET
 	bool "One-shot: reset stored per-LED backlight colors to defaults on next boot"
 	default n
