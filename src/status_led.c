@@ -32,6 +32,7 @@ typedef enum {
   COLOR_ERR,
   COLOR_SELECT, // bl_select_layer indicator
   COLOR_ADJUST, // bl_adjust_layer indicator
+  COLOR_GAMING, // gaming layer indicator
   COLOR_COUNT
 } status_led_color_t;
 
@@ -41,6 +42,7 @@ static struct led_rgb colors[COLOR_COUNT] = {
     {.r = 0, .g = 0, .b = STRIP_BRIGHTNESS},                              // COLOR_ERR
     {.r = STRIP_BRIGHTNESS, .g = 0, .b = STRIP_BRIGHTNESS},               // COLOR_SELECT (magenta)
     {.r = STRIP_BRIGHTNESS, .g = STRIP_BRIGHTNESS, .b = 0},               // COLOR_ADJUST (yellow)
+    {.r = 0, .g = STRIP_BRIGHTNESS, .b = STRIP_BRIGHTNESS},               // COLOR_GAMING (azure)
 };
 
 // pixels[0] is indexed directly by zmk_keymap_highest_layer_active(), so
