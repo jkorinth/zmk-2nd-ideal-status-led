@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/jkorinth/zmk-2nd-ideal-status-led/compare/v1.0.0...v1.1.0) (2026-11-02)
+
+
+### Features
+
+* **tincan:** migrate to zmk-tincan's channel-based speak/listen API ([eaed2b6](https://github.com/jkorinth/zmk-2nd-ideal-status-led/commit/eaed2b6e0412d40ac9f05aa8f14ec1aa76f6b24c))
+
 ## 1.0.0 (2026-11-02)
 
 
