@@ -28,9 +28,9 @@ LOG_MODULE_REGISTER(bl_store, CONFIG_ZMK_LOG_LEVEL);
 /* HSB, same convention as vendored zmk/app/src/rgb_underglow.c's
  * zmk_led_hsb: h 0-359, s/b 0-100. */
 struct bl_led_hsb {
-  uint16_t h;
-  uint8_t s;
-  uint8_t b;
+    uint16_t h;
+    uint8_t s;
+    uint8_t b;
 };
 
 /* Default brightness, as a percentage, rounded to nearest so hsb_to_rgb()
@@ -56,234 +56,232 @@ static bool backlight_on;
 /* Packs leds[] + backlight_on for a single settings_save_one() /
  * settings_read_cb() call under key "bl/leds". */
 struct bl_store_blob {
-  struct bl_led_hsb leds[BL_LED_COUNT];
-  bool on;
+    struct bl_led_hsb leds[BL_LED_COUNT];
+    bool on;
 };
 
 static void bl_store_save(void) {
-  struct bl_store_blob blob;
-  memcpy(blob.leds, leds, sizeof(leds));
-  blob.on = backlight_on;
-  settings_save_one("bl/leds", &blob, sizeof(blob));
+    struct bl_store_blob blob;
+    memcpy(blob.leds, leds, sizeof(leds));
+    blob.on = backlight_on;
+    settings_save_one("bl/leds", &blob, sizeof(blob));
 }
 
 struct bl_editor_state {
-  bool editing;
-  struct bl_led_ref led;
-  struct bl_led_hsb scratch; /* live, uncommitted */
+    bool editing;
+    struct bl_led_ref led;
+    struct bl_led_hsb scratch; /* live, uncommitted */
 };
 static struct bl_editor_state editor;
 
 static uint8_t flat_idx(struct bl_led_ref led) {
-  return (led.peripheral ? LEDS_PER_HALF : 0) + (led.chain_idx - 1);
+    return (led.peripheral ? LEDS_PER_HALF : 0) + (led.chain_idx - 1);
 }
 
 /* Ported from zmk/app/src/rgb_underglow.c's hsb_to_rgb(), adapted to the
  * local bl_led_hsb type. */
 static struct led_rgb hsb_to_rgb(struct bl_led_hsb hsb) {
-  float r = 0, g = 0, b = 0;
+    float r = 0, g = 0, b = 0;
 
-  uint8_t i = hsb.h / 60;
-  float v = hsb.b / ((float)BRT_MAX);
-  float s = hsb.s / ((float)SAT_MAX);
-  float f = hsb.h / ((float)HUE_MAX) * 6 - i;
-  float p = v * (1 - s);
-  float q = v * (1 - f * s);
-  float t = v * (1 - (1 - f) * s);
+    uint8_t i = hsb.h / 60;
+    float v = hsb.b / ((float)BRT_MAX);
+    float s = hsb.s / ((float)SAT_MAX);
+    float f = hsb.h / ((float)HUE_MAX) * 6 - i;
+    float p = v * (1 - s);
+    float q = v * (1 - f * s);
+    float t = v * (1 - (1 - f) * s);
 
-  switch (i % 6) {
-  case 0:
-    r = v;
-    g = t;
-    b = p;
-    break;
-  case 1:
-    r = q;
-    g = v;
-    b = p;
-    break;
-  case 2:
-    r = p;
-    g = v;
-    b = t;
-    break;
-  case 3:
-    r = p;
-    g = q;
-    b = v;
-    break;
-  case 4:
-    r = t;
-    g = p;
-    b = v;
-    break;
-  case 5:
-    r = v;
-    g = p;
-    b = q;
-    break;
-  }
+    switch (i % 6) {
+    case 0:
+        r = v;
+        g = t;
+        b = p;
+        break;
+    case 1:
+        r = q;
+        g = v;
+        b = p;
+        break;
+    case 2:
+        r = p;
+        g = v;
+        b = t;
+        break;
+    case 3:
+        r = p;
+        g = q;
+        b = v;
+        break;
+    case 4:
+        r = t;
+        g = p;
+        b = v;
+        break;
+    case 5:
+        r = v;
+        g = p;
+        b = q;
+        break;
+    }
 
-  return (struct led_rgb){.r = r * 255, .g = g * 255, .b = b * 255};
+    return (struct led_rgb){.r = r * 255, .g = g * 255, .b = b * 255};
 }
 
 static void send_color(uint8_t chain_idx, struct led_rgb rgb) {
-  si_sl_Msg m = si_sl_Msg_init_default;
-  m.which_msg = si_sl_Msg_set_color_tag;
-  m.msg.set_color.strip_index = chain_idx;
-  m.msg.set_color.has_color = true;
-  m.msg.set_color.color.r = rgb.r;
-  m.msg.set_color.color.g = rgb.g;
-  m.msg.set_color.color.b = rgb.b;
+    si_sl_Msg m = si_sl_Msg_init_default;
+    m.which_msg = si_sl_Msg_set_color_tag;
+    m.msg.set_color.strip_index = chain_idx;
+    m.msg.set_color.has_color = true;
+    m.msg.set_color.color.r = rgb.r;
+    m.msg.set_color.color.g = rgb.g;
+    m.msg.set_color.color.b = rgb.b;
 
-  static uint8_t buf[128];
-  pb_ostream_t stream = pb_ostream_from_buffer(buf, sizeof(buf));
-  if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
-    LOG_ERR("failed to encode color message: %s", PB_GET_ERROR(&stream));
-  } else {
-    tincan_speak(buf, stream.bytes_written);
-  }
+    static uint8_t buf[128];
+    pb_ostream_t stream = pb_ostream_from_buffer(buf, sizeof(buf));
+    if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
+        LOG_ERR("failed to encode color message: %s", PB_GET_ERROR(&stream));
+    } else {
+        tincan_speak(buf, stream.bytes_written);
+    }
 }
 
 static void render(struct bl_led_ref led, struct bl_led_hsb hsb) {
-  struct led_rgb rgb = hsb_to_rgb(hsb);
-  if (led.peripheral) {
-    send_color(led.chain_idx, rgb);
-  } else {
-    status_led_set_pixel(led.chain_idx, rgb);
-  }
+    struct led_rgb rgb = hsb_to_rgb(hsb);
+    if (led.peripheral) {
+        send_color(led.chain_idx, rgb);
+    } else {
+        status_led_set_pixel(led.chain_idx, rgb);
+    }
 }
 
 void bl_store_select(struct bl_led_ref led) {
-  editor.editing = true;
-  editor.led = led;
-  editor.scratch = leds[flat_idx(led)];
-  // locking=true: matches the stock &to behavior's own default (it sets its
-  // devicetree "locking;" property), which is what activated
-  // BL_SELECT_LAYER in the first place. Deactivating a locked layer requires
-  // locking=true too (see set_layer_state() in zmk/app/src/keymap.c) — call
-  // this with false and the old layer never actually deactivates, leaving
-  // both layers active and later re-entering it a no-op that raises no
-  // layer_state_changed event (so the status LED silently stops updating).
-  zmk_keymap_layer_to(BL_ADJUST_LAYER, true);
+    editor.editing = true;
+    editor.led = led;
+    editor.scratch = leds[flat_idx(led)];
+    // locking=true: matches the stock &to behavior's own default (it sets its
+    // devicetree "locking;" property), which is what activated
+    // BL_SELECT_LAYER in the first place. Deactivating a locked layer requires
+    // locking=true too (see set_layer_state() in zmk/app/src/keymap.c) — call
+    // this with false and the old layer never actually deactivates, leaving
+    // both layers active and later re-entering it a no-op that raises no
+    // layer_state_changed event (so the status LED silently stops updating).
+    zmk_keymap_layer_to(BL_ADJUST_LAYER, true);
 }
 
 void bl_store_adjust(uint8_t component, int8_t step) {
-  if (!editor.editing) {
-    return;
-  }
-  switch (component) {
-  case BL_HUE:
-    editor.scratch.h = (editor.scratch.h + HUE_MAX + step * 10) % HUE_MAX;
-    break;
-  case BL_SAT:
-    editor.scratch.s = CLAMP((int)editor.scratch.s + step * 5, 0, SAT_MAX);
-    break;
-  case BL_BRIGHT:
-    editor.scratch.b = CLAMP((int)editor.scratch.b + step * 5, 0, BRT_MAX);
-    break;
-  default:
-    LOG_ERR("invalid component: %u", component);
-    return;
-  }
-  render(editor.led, editor.scratch);
+    if (!editor.editing) {
+        return;
+    }
+    switch (component) {
+    case BL_HUE:
+        editor.scratch.h = (editor.scratch.h + HUE_MAX + step * 10) % HUE_MAX;
+        break;
+    case BL_SAT:
+        editor.scratch.s = CLAMP((int)editor.scratch.s + step * 5, 0, SAT_MAX);
+        break;
+    case BL_BRIGHT:
+        editor.scratch.b = CLAMP((int)editor.scratch.b + step * 5, 0, BRT_MAX);
+        break;
+    default:
+        LOG_ERR("invalid component: %u", component);
+        return;
+    }
+    render(editor.led, editor.scratch);
 }
 
 void bl_store_commit(void) {
-  if (!editor.editing) {
-    return;
-  }
-  leds[flat_idx(editor.led)] = editor.scratch;
-  bl_store_save();
-  editor.editing = false;
-  zmk_keymap_layer_to(BL_SELECT_LAYER, true); // see locking note in bl_store_select()
+    if (!editor.editing) {
+        return;
+    }
+    leds[flat_idx(editor.led)] = editor.scratch;
+    bl_store_save();
+    editor.editing = false;
+    zmk_keymap_layer_to(BL_SELECT_LAYER, true); // see locking note in bl_store_select()
 }
 
 void bl_store_discard(void) {
-  if (!editor.editing) {
-    return;
-  }
-  render(editor.led, leds[flat_idx(editor.led)]);
-  editor.editing = false;
-  zmk_keymap_layer_to(BL_SELECT_LAYER, true); // see locking note in bl_store_select()
+    if (!editor.editing) {
+        return;
+    }
+    render(editor.led, leds[flat_idx(editor.led)]);
+    editor.editing = false;
+    zmk_keymap_layer_to(BL_SELECT_LAYER, true); // see locking note in bl_store_select()
 }
 
-struct led_rgb bl_store_get_local_rgb(uint8_t chain_idx) {
-  return hsb_to_rgb(leds[chain_idx - 1]);
-}
+struct led_rgb bl_store_get_local_rgb(uint8_t chain_idx) { return hsb_to_rgb(leds[chain_idx - 1]); }
 
 void bl_store_set_backlight_on(bool on) {
-  if (backlight_on == on) {
-    return;
-  }
-  backlight_on = on;
-  bl_store_save();
+    if (backlight_on == on) {
+        return;
+    }
+    backlight_on = on;
+    bl_store_save();
 }
 
 void bl_store_push_peripheral_colors(void) {
-  // One SetColorsBulk write: a start index (1, past the status pixel) plus
-  // LEDS_PER_HALF*3 raw RGB bytes, no per-LED protobuf framing. Small
-  // enough to always fit in a single ATT write (unlike the old batched
-  // SetColors, which ballooned past the MTU on its per-entry overhead and
-  // needed a GATT long-write the peripheral doesn't support), and one round
-  // trip instead of six, so all 6 LEDs update together instead of visibly
-  // rippling in one at a time.
-  si_sl_Msg m = si_sl_Msg_init_default;
-  m.which_msg = si_sl_Msg_set_colors_bulk_tag;
-  m.msg.set_colors_bulk.start_index = 1;
-  m.msg.set_colors_bulk.rgb.size = LEDS_PER_HALF * 3;
-  for (uint8_t i = 0; i < LEDS_PER_HALF; i++) {
-    struct led_rgb rgb = hsb_to_rgb(leds[LEDS_PER_HALF + i]);
-    m.msg.set_colors_bulk.rgb.bytes[i * 3 + 0] = rgb.r;
-    m.msg.set_colors_bulk.rgb.bytes[i * 3 + 1] = rgb.g;
-    m.msg.set_colors_bulk.rgb.bytes[i * 3 + 2] = rgb.b;
-  }
+    // One SetColorsBulk write: a start index (1, past the status pixel) plus
+    // LEDS_PER_HALF*3 raw RGB bytes, no per-LED protobuf framing. Small
+    // enough to always fit in a single ATT write (unlike the old batched
+    // SetColors, which ballooned past the MTU on its per-entry overhead and
+    // needed a GATT long-write the peripheral doesn't support), and one round
+    // trip instead of six, so all 6 LEDs update together instead of visibly
+    // rippling in one at a time.
+    si_sl_Msg m = si_sl_Msg_init_default;
+    m.which_msg = si_sl_Msg_set_colors_bulk_tag;
+    m.msg.set_colors_bulk.start_index = 1;
+    m.msg.set_colors_bulk.rgb.size = LEDS_PER_HALF * 3;
+    for (uint8_t i = 0; i < LEDS_PER_HALF; i++) {
+        struct led_rgb rgb = hsb_to_rgb(leds[LEDS_PER_HALF + i]);
+        m.msg.set_colors_bulk.rgb.bytes[i * 3 + 0] = rgb.r;
+        m.msg.set_colors_bulk.rgb.bytes[i * 3 + 1] = rgb.g;
+        m.msg.set_colors_bulk.rgb.bytes[i * 3 + 2] = rgb.b;
+    }
 
-  static uint8_t buf[128];
-  pb_ostream_t stream = pb_ostream_from_buffer(buf, sizeof(buf));
-  if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
-    LOG_ERR("failed to encode bulk colors message: %s", PB_GET_ERROR(&stream));
-  } else {
-    tincan_speak(buf, stream.bytes_written);
-  }
+    static uint8_t buf[128];
+    pb_ostream_t stream = pb_ostream_from_buffer(buf, sizeof(buf));
+    if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
+        LOG_ERR("failed to encode bulk colors message: %s", PB_GET_ERROR(&stream));
+    } else {
+        tincan_speak(buf, stream.bytes_written);
+    }
 }
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 static int bl_store_settings_set(const char *name, size_t len, settings_read_cb read_cb,
-                                  void *cb_arg) {
-  const char *next;
+                                 void *cb_arg) {
+    const char *next;
 
-  if (settings_name_steq(name, "leds", &next) && !next) {
-    if (IS_ENABLED(CONFIG_ZMK_2NDIDEAL_BL_RESET)) {
-      LOG_WRN("CONFIG_ZMK_2NDIDEAL_BL_RESET is set: ignoring stored backlight "
-              "colors/state, rewriting defaults. Disable this option and "
-              "reflash once you've confirmed the reset.");
-      backlight_on = false;
-      bl_store_save();
-      return 0;
+    if (settings_name_steq(name, "leds", &next) && !next) {
+        if (IS_ENABLED(CONFIG_ZMK_2NDIDEAL_BL_RESET)) {
+            LOG_WRN("CONFIG_ZMK_2NDIDEAL_BL_RESET is set: ignoring stored backlight "
+                    "colors/state, rewriting defaults. Disable this option and "
+                    "reflash once you've confirmed the reset.");
+            backlight_on = false;
+            bl_store_save();
+            return 0;
+        }
+        struct bl_store_blob blob;
+        if (len != sizeof(blob)) {
+            return -EINVAL;
+        }
+        if (read_cb(cb_arg, &blob, sizeof(blob)) < 0) {
+            return -EINVAL;
+        }
+        memcpy(leds, blob.leds, sizeof(leds));
+        backlight_on = blob.on;
+        if (backlight_on) {
+            // Restore the backlight to how it was left: render this half's LEDs
+            // locally now (the strip device is already ready — this settings
+            // callback runs from settings_load() in main(), which happens after
+            // all SYS_INIT hooks including status_led_init()); the peripheral
+            // push safely queues in tincan even if BLE hasn't connected yet.
+            status_led_set_backlight(1);
+            bl_store_push_peripheral_colors();
+        }
+        return 0;
     }
-    struct bl_store_blob blob;
-    if (len != sizeof(blob)) {
-      return -EINVAL;
-    }
-    if (read_cb(cb_arg, &blob, sizeof(blob)) < 0) {
-      return -EINVAL;
-    }
-    memcpy(leds, blob.leds, sizeof(leds));
-    backlight_on = blob.on;
-    if (backlight_on) {
-      // Restore the backlight to how it was left: render this half's LEDs
-      // locally now (the strip device is already ready — this settings
-      // callback runs from settings_load() in main(), which happens after
-      // all SYS_INIT hooks including status_led_init()); the peripheral
-      // push safely queues in tincan even if BLE hasn't connected yet.
-      status_led_set_backlight(1);
-      bl_store_push_peripheral_colors();
-    }
-    return 0;
-  }
 
-  return -ENOENT;
+    return -ENOENT;
 }
 
 SETTINGS_STATIC_HANDLER_DEFINE(bl_store, "bl", NULL, bl_store_settings_set, NULL, NULL);

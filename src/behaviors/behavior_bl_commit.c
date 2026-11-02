@@ -17,23 +17,23 @@ static int bl_commit_init(const struct device *dev) { return 0; }
 
 static int on_bl_commit_binding_pressed(struct zmk_behavior_binding *binding,
                                         struct zmk_behavior_binding_event event) {
-  return ZMK_BEHAVIOR_OPAQUE;
+    return ZMK_BEHAVIOR_OPAQUE;
 }
 
 static int on_bl_commit_binding_released(struct zmk_behavior_binding *binding,
                                          struct zmk_behavior_binding_event event) {
-  switch (binding->param1) {
-  case BL_COMMIT:
-    bl_store_commit();
-    break;
-  case BL_DISCARD:
-    bl_store_discard();
-    break;
-  default:
-    LOG_ERR("invalid parameter received: %u", binding->param1);
-    break;
-  }
-  return ZMK_BEHAVIOR_OPAQUE;
+    switch (binding->param1) {
+    case BL_COMMIT:
+        bl_store_commit();
+        break;
+    case BL_DISCARD:
+        bl_store_discard();
+        break;
+    default:
+        LOG_ERR("invalid parameter received: %u", binding->param1);
+        break;
+    }
+    return ZMK_BEHAVIOR_OPAQUE;
 }
 
 static const struct behavior_driver_api bl_commit_driver_api = {
@@ -41,9 +41,9 @@ static const struct behavior_driver_api bl_commit_driver_api = {
     .binding_released = on_bl_commit_binding_released,
 };
 
-#define BL_COMMIT_INST(n)                                                                         \
-  BEHAVIOR_DT_INST_DEFINE(n, bl_commit_init, NULL, NULL, NULL, POST_KERNEL,                        \
-                          CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &bl_commit_driver_api);
+#define BL_COMMIT_INST(n)                                                                          \
+    BEHAVIOR_DT_INST_DEFINE(n, bl_commit_init, NULL, NULL, NULL, POST_KERNEL,                      \
+                            CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &bl_commit_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(BL_COMMIT_INST)
 

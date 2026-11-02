@@ -13,8 +13,9 @@
 #define BL_ADJUST_LAYER 4
 
 struct bl_led_ref {
-  bool peripheral;   /* false = this (central/left) half, true = the other (peripheral/right) half */
-  uint8_t chain_idx; /* 1..6: this half's local WS2812 chain index / si_sl_SetColor strip_index */
+    bool
+        peripheral; /* false = this (central/left) half, true = the other (peripheral/right) half */
+    uint8_t chain_idx; /* 1..6: this half's local WS2812 chain index / si_sl_SetColor strip_index */
 };
 
 /*

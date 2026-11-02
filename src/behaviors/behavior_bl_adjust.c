@@ -16,13 +16,13 @@ static int bl_adjust_init(const struct device *dev) { return 0; }
 
 static int on_bl_adjust_binding_pressed(struct zmk_behavior_binding *binding,
                                         struct zmk_behavior_binding_event event) {
-  return ZMK_BEHAVIOR_OPAQUE;
+    return ZMK_BEHAVIOR_OPAQUE;
 }
 
 static int on_bl_adjust_binding_released(struct zmk_behavior_binding *binding,
                                          struct zmk_behavior_binding_event event) {
-  bl_store_adjust((uint8_t)binding->param1, (int8_t)binding->param2);
-  return ZMK_BEHAVIOR_OPAQUE;
+    bl_store_adjust((uint8_t)binding->param1, (int8_t)binding->param2);
+    return ZMK_BEHAVIOR_OPAQUE;
 }
 
 static const struct behavior_driver_api bl_adjust_driver_api = {
@@ -30,9 +30,9 @@ static const struct behavior_driver_api bl_adjust_driver_api = {
     .binding_released = on_bl_adjust_binding_released,
 };
 
-#define BL_ADJUST_INST(n)                                                                         \
-  BEHAVIOR_DT_INST_DEFINE(n, bl_adjust_init, NULL, NULL, NULL, POST_KERNEL,                        \
-                          CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &bl_adjust_driver_api);
+#define BL_ADJUST_INST(n)                                                                          \
+    BEHAVIOR_DT_INST_DEFINE(n, bl_adjust_init, NULL, NULL, NULL, POST_KERNEL,                      \
+                            CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &bl_adjust_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(BL_ADJUST_INST)
 

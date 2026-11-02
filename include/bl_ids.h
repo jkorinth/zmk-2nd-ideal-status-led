@@ -10,7 +10,7 @@
  * left/middle/right (see xiao_ble.overlay's led_strip chain order and the
  * underglow schematic's DIN->DOUT daisy chain).
  */
-#define BL_HALF_LOCAL      0x00
+#define BL_HALF_LOCAL 0x00
 #define BL_HALF_PERIPHERAL 0x10
 
 #define BL_LED_L_TOP1 (BL_HALF_LOCAL | 1)
@@ -28,12 +28,12 @@
 #define BL_LED_R_BOT3 (BL_HALF_PERIPHERAL | 4)
 
 /* bl-adjust param1: which HSB component. param2: signed step direction. */
-#define BL_HUE    0
-#define BL_SAT    1
+#define BL_HUE 0
+#define BL_SAT 1
 #define BL_BRIGHT 2
 #define BL_STEP_DOWN (-1)
-#define BL_STEP_UP   (1)
+#define BL_STEP_UP (1)
 
 /* bl-commit param1 */
-#define BL_COMMIT  1
+#define BL_COMMIT 1
 #define BL_DISCARD 2
