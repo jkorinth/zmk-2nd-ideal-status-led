@@ -1,6 +1,17 @@
 #pragma once
 
 #include <zephyr/drivers/led_strip.h>
+#include <zephyr/sys/util.h>
+
+#include <tincan/tincan.h>
+
+#define STATUS_LED_TINCAN_CHANNEL CONFIG_ZMK_2NDIDEAL_STATUS_LED_TINCAN_CHANNEL
+
+BUILD_ASSERT(STATUS_LED_TINCAN_CHANNEL > TINCAN_CHANNEL_CONTROL &&
+                 STATUS_LED_TINCAN_CHANNEL <= TINCAN_CHANNEL_MAX,
+             "set CONFIG_ZMK_2NDIDEAL_STATUS_LED_TINCAN_CHANNEL in the board's "
+             ".conf, to a value in 1..TINCAN_CHANNEL_MAX (0 is reserved by "
+             "zmk-tincan for its HELLO handshake)");
 
 /*
  * Turns the backlight pixels (all strip pixels except the status LED) on or

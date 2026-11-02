@@ -141,7 +141,10 @@ static void send_color(uint8_t chain_idx, struct led_rgb rgb) {
     if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
         LOG_ERR("failed to encode color message: %s", PB_GET_ERROR(&stream));
     } else {
-        tincan_speak(buf, stream.bytes_written);
+        int ret = tincan_speak(STATUS_LED_TINCAN_CHANNEL, buf, stream.bytes_written);
+        if (ret < 0) {
+            LOG_ERR("tincan_speak failed: %d", ret);
+        }
     }
 }
 
@@ -242,7 +245,10 @@ void bl_store_push_peripheral_colors(void) {
     if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
         LOG_ERR("failed to encode bulk colors message: %s", PB_GET_ERROR(&stream));
     } else {
-        tincan_speak(buf, stream.bytes_written);
+        int ret = tincan_speak(STATUS_LED_TINCAN_CHANNEL, buf, stream.bytes_written);
+        if (ret < 0) {
+            LOG_ERR("tincan_speak failed: %d", ret);
+        }
     }
 }
 

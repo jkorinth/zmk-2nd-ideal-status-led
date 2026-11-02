@@ -67,7 +67,10 @@ static int on_status_led_binding_released(struct zmk_behavior_binding *binding,
     } else {
         const size_t len = stream.bytes_written;
         LOG_DBG("sending %u bytes via tincan ...", len);
-        tincan_speak(buf, len);
+        int ret = tincan_speak(STATUS_LED_TINCAN_CHANNEL, buf, len);
+        if (ret < 0) {
+            LOG_ERR("tincan_speak failed: %d", ret);
+        }
     }
 
     return ZMK_BEHAVIOR_OPAQUE;
