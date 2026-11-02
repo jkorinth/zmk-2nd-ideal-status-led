@@ -230,7 +230,10 @@ static int status_led_event_listener(const zmk_event_t *eh) {
         if (pb_encode(&stream, si_sl_Msg_fields, &m) == 0) {
             LOG_ERR("failed to encode color message: %s", PB_GET_ERROR(&stream));
         } else {
-            tincan_speak(buf, stream.bytes_written);
+            int ret = tincan_speak(STATUS_LED_TINCAN_CHANNEL, buf, stream.bytes_written);
+            if (ret < 0) {
+                LOG_ERR("tincan_speak failed: %d", ret);
+            }
         }
     }
     return 0;
@@ -370,7 +373,10 @@ static void status_led_peripheral_connected(struct bt_conn *conn, uint8_t err) {
     if (err) {
         LOG_WRN("connection to central has errors: 0x%02x", err);
     } else {
-        tincan_listen(status_led_on_tincan);
+        int ret = tincan_listen(STATUS_LED_TINCAN_CHANNEL, status_led_on_tincan);
+        if (ret < 0) {
+            LOG_ERR("tincan_listen failed: %d", ret);
+        }
     }
 }
 

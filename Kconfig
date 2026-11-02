@@ -46,6 +46,15 @@ config ZMK_2NDIDEAL_BL_RESET
 	  leaving it enabled resets the stored colors back to defaults on
 	  every boot.
 
+config ZMK_2NDIDEAL_STATUS_LED_TINCAN_CHANNEL
+	int "tincan channel used for status LED messages"
+	depends on ZMK_TINCAN
+	help
+	  No default: channel 0 is reserved by zmk-tincan for its HELLO
+	  handshake, and an unset int Kconfig resolves to 0, so this must be
+	  set explicitly (e.g. to 1) in the board's .conf. A BUILD_ASSERT in
+	  status_led_backlight.h turns a missing value into a compile error.
+
 endif # ZMK_2NDIDEAL_STATUS_LED
 
 config ZMK_BEHAVIOR_STATUS_LED
